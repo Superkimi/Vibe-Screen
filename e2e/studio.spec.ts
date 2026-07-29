@@ -1,7 +1,14 @@
 import { expect, test } from "@playwright/test";
 
-test("landing page reaches the studio", async ({ page }) => {
+test("root route restores the saved language preference", async ({ page }) => {
+  await page.addInitScript(() => window.localStorage.setItem("vibe_screen_locale", "zh"));
   await page.goto("/");
+  await expect(page).toHaveURL(/\/zh\/?$/);
+  await expect(page.getByRole("heading", { name: "把屏幕录制，剪成好视频。" })).toBeVisible();
+});
+
+test("landing page reaches the studio", async ({ page }) => {
+  await page.goto("/en");
   await expect(page.getByRole("heading", { name: "Your screen, edited with intention." })).toBeVisible();
   await page.getByRole("link", { name: "Start recording" }).click();
   await expect(page).toHaveURL(/\/studio\/?$/);
@@ -9,6 +16,17 @@ test("landing page reaches the studio", async ({ page }) => {
   await expect(page.getByLabel("Project media")).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Inspector" })).toBeVisible();
   await expect(page.getByLabel("Timeline editor")).toBeVisible();
+});
+
+test("Chinese landing page switches to the matching English route", async ({ page }) => {
+  await page.goto("/zh");
+  await expect(page.getByRole("heading", { name: "把屏幕录制，剪成好视频。" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "主要导航" })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
+  await page.getByRole("link", { name: "EN", exact: true }).click();
+  await expect(page).toHaveURL(/\/en\/?$/);
+  await expect(page.getByRole("heading", { name: "Your screen, edited with intention." })).toBeVisible();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
 
 test("recording dialog exposes capture and quality controls", async ({ page }) => {

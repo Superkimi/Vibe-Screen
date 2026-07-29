@@ -4,14 +4,13 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://aihubhub.com/vibe-screen"),
   title: {
-    default: "Vibe Screen | Record beautifully in your browser",
+    default: "Vibe Screen | 在线录屏与视频编辑器",
     template: "%s | Vibe Screen",
   },
-  description:
-    "A private, local-first browser screen recorder and editor for polished product demos, tutorials, and walkthroughs.",
+  description: "在浏览器完成录屏、编辑与高质量导出，素材与工程默认保存在本地。",
   openGraph: {
     title: "Vibe Screen",
-    description: "Record, edit, and export polished screen videos without leaving your browser.",
+    description: "在浏览器完成录屏、剪辑和高质量导出，无需上传原始素材。",
     type: "website",
     images: ["/images/vibe-screen-studio.png"],
   },
