@@ -35,7 +35,7 @@ export function LandingPage({ locale }: { locale: LandingLocale }) {
         </nav>
         <div className="landing-nav-actions">
           <LanguageSwitcher locale={locale} ariaLabel={copy.nav.language} />
-          <Link className="nav-cta" href="/studio">
+          <Link className="nav-cta" href={`/${locale}/studio`}>
             {copy.nav.studio}
             <ArrowRight size={16} />
           </Link>
@@ -49,7 +49,7 @@ export function LandingPage({ locale }: { locale: LandingLocale }) {
             <h1>{copy.hero.title}</h1>
             <p>{copy.hero.description}</p>
             <div className="hero-actions">
-              <Link className="landing-primary" href="/studio">
+              <Link className="landing-primary" href={`/${locale}/studio`}>
                 {copy.hero.primary}
                 <Record size={18} weight="fill" />
               </Link>
@@ -171,7 +171,7 @@ export function LandingPage({ locale }: { locale: LandingLocale }) {
             <h2>{copy.closing.title}</h2>
             <p>{copy.closing.body}</p>
           </div>
-          <Link className="landing-primary" href="/studio">
+          <Link className="landing-primary" href={`/${locale}/studio`}>
             {copy.closing.action}
             <ArrowRight size={18} />
           </Link>

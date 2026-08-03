@@ -5,10 +5,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getAspectRatioValue, getScreenAsset } from "@/lib/project";
 import { renderFrame } from "@/lib/render-frame";
 import { useEditor } from "./EditorContext";
+import { useEditorCopy } from "./EditorI18n";
 import { RecorderDialog } from "./RecorderDialog";
 
 export function CanvasWorkspace() {
   const { state, dispatch } = useEditor();
+  const copy = useEditorCopy();
   const screenAsset = getScreenAsset(state.project);
   const cameraAsset = state.project.assets.find((asset) => asset.id === state.project.webcam.assetId);
   const screenRef = useRef<HTMLVideoElement>(null);
@@ -105,13 +107,13 @@ export function CanvasWorkspace() {
     <main className="canvas-workspace">
       <div className="canvas-toolbar">
         <div>
-          <button className="icon-button" aria-label="Fit canvas" onClick={() => setZoom(76)}>
+          <button className="icon-button" aria-label={copy.canvas.fit} onClick={() => setZoom(76)}>
             <ArrowsOut size={17} />
           </button>
           <span>{zoom}%</span>
         </div>
         <input
-          aria-label="Canvas zoom"
+          aria-label={copy.canvas.zoom}
           type="range"
           min="40"
           max="110"
@@ -128,7 +130,7 @@ export function CanvasWorkspace() {
               aspectRatio: `${ratio}`,
             }}
           >
-            <canvas ref={canvasRef} aria-label="Video composition preview" />
+            <canvas ref={canvasRef} aria-label={copy.canvas.preview} />
             <video
               ref={screenRef}
               src={screenAsset.objectUrl}
@@ -153,16 +155,16 @@ export function CanvasWorkspace() {
         ) : (
           <div className="canvas-empty">
             <span className="empty-symbol"><Record size={28} weight="fill" /></span>
-            <h2>Capture your first scene</h2>
-            <p>Record a tab, window, or display. You can also import an existing video from the media panel.</p>
+            <h2>{copy.canvas.emptyTitle}</h2>
+            <p>{copy.canvas.emptyBody}</p>
             <div>
               <button className="primary-button" onClick={() => setRecordOpen(true)}>
                 <Record size={17} weight="fill" />
-                Start recording
+                {copy.canvas.startRecording}
               </button>
               <button className="secondary-button" onClick={() => document.querySelector<HTMLInputElement>(".media-rail input[type=file]")?.click()}>
                 <Plus size={17} />
-                Import video
+                {copy.canvas.importVideo}
               </button>
             </div>
           </div>
@@ -172,7 +174,7 @@ export function CanvasWorkspace() {
         <div className="floating-playback">
           <button
             className="play-button"
-            aria-label={state.isPlaying ? "Pause" : "Play"}
+            aria-label={state.isPlaying ? copy.canvas.pause : copy.canvas.play}
             onClick={() => dispatch({ type: "SET_PLAYING", value: !state.isPlaying })}
           >
             {state.isPlaying ? <Pause size={18} weight="fill" /> : <Play size={18} weight="fill" />}

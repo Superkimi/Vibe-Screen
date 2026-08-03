@@ -906,6 +906,25 @@ a {
   color: var(--studio-text);
 }
 
+.editor-topbar .language-switcher {
+  border-color: var(--studio-line);
+  background: var(--studio-panel);
+}
+
+.editor-topbar .language-switcher a {
+  color: var(--studio-muted);
+}
+
+.editor-topbar .language-switcher a:hover {
+  color: var(--studio-text);
+}
+
+.editor-topbar .language-switcher a[aria-current="page"] {
+  background: var(--studio-raised);
+  color: var(--studio-accent);
+  box-shadow: none;
+}
+
 .studio-main {
   display: grid;
   grid-template-columns: 232px minmax(0, 1fr) 304px;

@@ -13,10 +13,12 @@ import { useRef, useState } from "react";
 import { formatBytes, readVideoMetadata } from "@/lib/media";
 import { formatTime } from "@/lib/project";
 import { useEditor } from "./EditorContext";
+import { useEditorCopy } from "./EditorI18n";
 import { RecorderDialog } from "./RecorderDialog";
 
 export function MediaRail() {
   const { state, dispatch, addBlob, newProject } = useEditor();
+  const copy = useEditorCopy();
   const inputRef = useRef<HTMLInputElement>(null);
   const [recordOpen, setRecordOpen] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -32,8 +34,8 @@ export function MediaRail() {
         await readVideoMetadata(file);
         await addBlob(file, file.name, "video", !state.project.screenAssetId);
       }
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The selected media could not be imported.");
+    } catch {
+      setError(copy.media.importError);
     } finally {
       setImporting(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -42,24 +44,24 @@ export function MediaRail() {
 
   return (
     <>
-      <aside className="media-rail" aria-label="Project media">
+      <aside className="media-rail" aria-label={copy.media.aria}>
         <header>
           <div>
-            <span>Project</span>
-            <strong>Media</strong>
+            <span>{copy.media.project}</span>
+            <strong>{copy.media.media}</strong>
           </div>
-          <button className="icon-button" aria-label="New project" onClick={newProject}>
+          <button className="icon-button" aria-label={copy.media.newProject} onClick={newProject}>
             <Plus size={17} />
           </button>
         </header>
         <div className="rail-actions">
           <button onClick={() => setRecordOpen(true)}>
             <Record size={18} weight="fill" />
-            Record
+            {copy.media.record}
           </button>
           <button onClick={() => inputRef.current?.click()}>
             <FolderOpen size={18} />
-            Import
+            {copy.media.import}
           </button>
           <input
             ref={inputRef}
@@ -71,12 +73,12 @@ export function MediaRail() {
           />
         </div>
         <div className="media-section-title">
-          <span>Assets</span>
+          <span>{copy.media.assets}</span>
           <b>{state.project.assets.length}</b>
         </div>
         <div className="media-list">
           {importing && (
-            <div className="media-skeleton" aria-label="Importing media">
+            <div className="media-skeleton" aria-label={copy.media.importing}>
               <i />
               <span />
             </div>
@@ -125,7 +127,7 @@ export function MediaRail() {
               </button>
               <button
                 className="asset-delete"
-                aria-label={`Remove ${asset.name}`}
+                aria-label={copy.media.removeAsset(asset.name)}
                 onClick={() => dispatch({ type: "REMOVE_ASSET", assetId: asset.id })}
               >
                 <Trash size={14} />
@@ -135,15 +137,15 @@ export function MediaRail() {
           {!importing && state.project.assets.length === 0 && (
             <div className="rail-empty">
               <VideoCamera size={28} />
-              <strong>No media yet</strong>
-              <p>Record your screen or import a browser-compatible video.</p>
+              <strong>{copy.media.noMedia}</strong>
+              <p>{copy.media.noMediaBody}</p>
             </div>
           )}
         </div>
         {error && <p className="rail-error">{error}</p>}
         <footer>
-          <span>Local project</span>
-          <small>Media never leaves this browser</small>
+          <span>{copy.media.localProject}</span>
+          <small>{copy.media.localBody}</small>
         </footer>
       </aside>
       <RecorderDialog open={recordOpen} onClose={() => setRecordOpen(false)} />

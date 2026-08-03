@@ -9,9 +9,11 @@ const STORAGE_KEY = "vibe_screen_locale";
 export function LanguageSwitcher({
   locale,
   ariaLabel,
+  pathForLocale = (nextLocale) => `/${nextLocale}`,
 }: {
   locale: LandingLocale;
   ariaLabel: string;
+  pathForLocale?: (locale: LandingLocale) => string;
 }) {
   useEffect(() => {
     document.documentElement.lang = locale === "zh" ? "zh-CN" : "en";
@@ -22,7 +24,7 @@ export function LanguageSwitcher({
   return (
     <div className="language-switcher" role="group" aria-label={ariaLabel}>
       <Link
-        href="/zh"
+        href={pathForLocale("zh")}
         lang="zh-CN"
         aria-current={locale === "zh" ? "page" : undefined}
         onClick={() => window.localStorage.setItem(STORAGE_KEY, "zh")}
@@ -30,7 +32,7 @@ export function LanguageSwitcher({
         中文
       </Link>
       <Link
-        href="/en"
+        href={pathForLocale("en")}
         lang="en"
         aria-current={locale === "en" ? "page" : undefined}
         onClick={() => window.localStorage.setItem(STORAGE_KEY, "en")}

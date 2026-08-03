@@ -11,28 +11,30 @@ import {
 } from "@phosphor-icons/react";
 import { clampTime, getScreenAsset, type AspectRatio } from "@/lib/project";
 import { useEditor } from "./EditorContext";
+import { useEditorCopy } from "./EditorI18n";
 
 const panels = [
-  { id: "media" as const, label: "Clip", icon: FilmSlate },
-  { id: "canvas" as const, label: "Canvas", icon: ImageSquare },
-  { id: "text" as const, label: "Text", icon: TextT },
-  { id: "zoom" as const, label: "Zoom", icon: MagnifyingGlassPlus },
-  { id: "export" as const, label: "Export", icon: Export },
+  { id: "media" as const, icon: FilmSlate },
+  { id: "canvas" as const, icon: ImageSquare },
+  { id: "text" as const, icon: TextT },
+  { id: "zoom" as const, icon: MagnifyingGlassPlus },
+  { id: "export" as const, icon: Export },
 ];
 
 export function InspectorPanel({ onExport }: { onExport: () => void }) {
   const { state, dispatch } = useEditor();
+  const copy = useEditorCopy();
   return (
-    <aside className="inspector-panel" aria-label="Inspector">
-      <nav aria-label="Inspector sections">
-        {panels.map(({ id, label, icon: Icon }) => (
+    <aside className="inspector-panel" aria-label={copy.inspector.aria}>
+      <nav aria-label={copy.inspector.sections}>
+        {panels.map(({ id, icon: Icon }) => (
           <button
             key={id}
             className={state.activePanel === id ? "active" : ""}
             onClick={() => dispatch({ type: "SET_PANEL", panel: id })}
           >
             <Icon size={17} />
-            <span>{label}</span>
+            <span>{copy.inspector.panel[id]}</span>
           </button>
         ))}
       </nav>
@@ -58,15 +60,16 @@ function SectionHeader({ title, description }: { title: string; description: str
 
 function ClipInspector() {
   const { state, dispatch } = useEditor();
+  const copy = useEditorCopy();
   const asset = getScreenAsset(state.project);
   if (!asset) {
-    return <InspectorEmpty icon={<FilmSlate size={25} />} title="No clip selected" body="Record or import a video to edit its timing." />;
+    return <InspectorEmpty icon={<FilmSlate size={25} />} title={copy.inspector.clip.noSelectedTitle} body={copy.inspector.clip.noSelectedBody} />;
   }
   const start = state.project.trim.start;
   const end = state.project.trim.end || asset.duration;
   return (
     <>
-      <SectionHeader title="Screen clip" description="Set the usable range without changing your source file." />
+      <SectionHeader title={copy.inspector.clip.title} description={copy.inspector.clip.description} />
       <div className="source-summary">
         <video src={asset.objectUrl} muted preload="metadata" />
         <div>
@@ -74,10 +77,10 @@ function ClipInspector() {
           <span>{asset.width} × {asset.height}</span>
         </div>
       </div>
-      <ControlGroup label="Trim range">
+      <ControlGroup label={copy.inspector.clip.trim}>
         <div className="dual-values">
           <NumberField
-            label="In"
+            label={copy.inspector.clip.in}
             value={start}
             max={Math.max(0, end - 0.1)}
             step={0.1}
@@ -86,7 +89,7 @@ function ClipInspector() {
             }
           />
           <NumberField
-            label="Out"
+            label={copy.inspector.clip.out}
             value={end}
             min={start + 0.1}
             max={asset.duration}
@@ -101,7 +104,7 @@ function ClipInspector() {
           />
         </div>
         <input
-          aria-label="Trim in"
+          aria-label={copy.inspector.clip.trimIn}
           type="range"
           min="0"
           max={asset.duration}
@@ -116,7 +119,7 @@ function ClipInspector() {
           }
         />
         <input
-          aria-label="Trim out"
+          aria-label={copy.inspector.clip.trimOut}
           type="range"
           min="0"
           max={asset.duration}
@@ -132,14 +135,14 @@ function ClipInspector() {
         />
       </ControlGroup>
       {state.project.webcam.assetId && (
-        <ControlGroup label="Camera overlay">
+        <ControlGroup label={copy.inspector.clip.camera}>
           <Toggle
-            label="Show camera"
+            label={copy.inspector.clip.showCamera}
             checked={state.project.webcam.enabled}
             onChange={(enabled) => dispatch({ type: "UPDATE_WEBCAM", patch: { enabled } })}
           />
           <Range
-            label="Size"
+            label={copy.inspector.clip.size}
             value={state.project.webcam.size}
             min={10}
             max={42}
@@ -147,16 +150,16 @@ function ClipInspector() {
             onChange={(size) => dispatch({ type: "UPDATE_WEBCAM", patch: { size } })}
           />
           <div className="dual-values">
-            <NumberField label="X" value={state.project.webcam.x} min={0} max={100} onChange={(x) => dispatch({ type: "UPDATE_WEBCAM", patch: { x } })} />
-            <NumberField label="Y" value={state.project.webcam.y} min={0} max={100} onChange={(y) => dispatch({ type: "UPDATE_WEBCAM", patch: { y } })} />
+            <NumberField label={copy.inspector.clip.x} value={state.project.webcam.x} min={0} max={100} onChange={(x) => dispatch({ type: "UPDATE_WEBCAM", patch: { x } })} />
+            <NumberField label={copy.inspector.clip.y} value={state.project.webcam.y} min={0} max={100} onChange={(y) => dispatch({ type: "UPDATE_WEBCAM", patch: { y } })} />
           </div>
           <SelectField
-            label="Shape"
+            label={copy.inspector.clip.shape}
             value={state.project.webcam.shape}
             options={[
-              ["circle", "Circle"],
-              ["rounded", "Rounded"],
-              ["square", "Square"],
+              ["circle", copy.inspector.clip.circle],
+              ["rounded", copy.inspector.clip.rounded],
+              ["square", copy.inspector.clip.square],
             ]}
             onChange={(shape) =>
               dispatch({
@@ -165,7 +168,7 @@ function ClipInspector() {
               })
             }
           />
-          <Toggle label="Mirror camera" checked={state.project.webcam.mirrored} onChange={(mirrored) => dispatch({ type: "UPDATE_WEBCAM", patch: { mirrored } })} />
+          <Toggle label={copy.inspector.clip.mirror} checked={state.project.webcam.mirrored} onChange={(mirrored) => dispatch({ type: "UPDATE_WEBCAM", patch: { mirrored } })} />
         </ControlGroup>
       )}
     </>
@@ -174,18 +177,19 @@ function ClipInspector() {
 
 function CanvasInspector() {
   const { state, dispatch } = useEditor();
+  const copy = useEditorCopy();
   const appearance = state.project.appearance;
   const ratios: Array<[AspectRatio, string]> = [
-    ["source", "Original"],
-    ["16:9", "Wide"],
-    ["9:16", "Vertical"],
-    ["1:1", "Square"],
-    ["4:3", "Classic"],
+    ["source", copy.inspector.canvasPanel.original],
+    ["16:9", copy.inspector.canvasPanel.wide],
+    ["9:16", copy.inspector.canvasPanel.vertical],
+    ["1:1", copy.inspector.canvasPanel.square],
+    ["4:3", copy.inspector.canvasPanel.classic],
   ];
   return (
     <>
-      <SectionHeader title="Canvas" description="Shape the composition and keep the source sharp." />
-      <ControlGroup label="Aspect ratio">
+      <SectionHeader title={copy.inspector.canvasPanel.title} description={copy.inspector.canvasPanel.description} />
+      <ControlGroup label={copy.inspector.canvasPanel.ratio}>
         <div className="ratio-grid">
           {ratios.map(([value, label]) => (
             <button
@@ -199,7 +203,7 @@ function CanvasInspector() {
           ))}
         </div>
       </ControlGroup>
-      <ControlGroup label="Background">
+      <ControlGroup label={copy.inspector.canvasPanel.background}>
         <div className="segmented-control">
           {(["solid", "gradient"] as const).map((kind) => (
             <button
@@ -207,13 +211,13 @@ function CanvasInspector() {
               className={appearance.backgroundKind === kind ? "active" : ""}
               onClick={() => dispatch({ type: "UPDATE_APPEARANCE", patch: { backgroundKind: kind } })}
             >
-              {kind === "solid" ? "Solid" : "Gradient"}
+              {kind === "solid" ? copy.inspector.canvasPanel.solid : copy.inspector.canvasPanel.gradient}
             </button>
           ))}
         </div>
         {appearance.backgroundKind === "solid" ? (
           <ColorField
-            label="Color"
+            label={copy.inspector.canvasPanel.color}
             value={appearance.background}
             onChange={(background) => dispatch({ type: "UPDATE_APPEARANCE", patch: { background } })}
           />
@@ -221,24 +225,24 @@ function CanvasInspector() {
           <>
             <div className="dual-values">
               <ColorField
-                label="From"
+                label={copy.inspector.canvasPanel.from}
                 value={appearance.gradientFrom}
                 onChange={(gradientFrom) => dispatch({ type: "UPDATE_APPEARANCE", patch: { gradientFrom } })}
               />
               <ColorField
-                label="To"
+                label={copy.inspector.canvasPanel.to}
                 value={appearance.gradientTo}
                 onChange={(gradientTo) => dispatch({ type: "UPDATE_APPEARANCE", patch: { gradientTo } })}
               />
             </div>
-            <Range label="Angle" value={appearance.gradientAngle} min={0} max={360} unit="°" onChange={(gradientAngle) => dispatch({ type: "UPDATE_APPEARANCE", patch: { gradientAngle } })} />
+            <Range label={copy.inspector.canvasPanel.angle} value={appearance.gradientAngle} min={0} max={360} unit="°" onChange={(gradientAngle) => dispatch({ type: "UPDATE_APPEARANCE", patch: { gradientAngle } })} />
           </>
         )}
       </ControlGroup>
-      <ControlGroup label="Frame">
-        <Range label="Padding" value={appearance.padding} min={0} max={18} unit="%" onChange={(padding) => dispatch({ type: "UPDATE_APPEARANCE", patch: { padding } })} />
-        <Range label="Corner radius" value={appearance.radius} min={0} max={60} unit="%" onChange={(radius) => dispatch({ type: "UPDATE_APPEARANCE", patch: { radius } })} />
-        <Range label="Shadow" value={appearance.shadow} min={0} max={100} unit="%" onChange={(shadow) => dispatch({ type: "UPDATE_APPEARANCE", patch: { shadow } })} />
+      <ControlGroup label={copy.inspector.canvasPanel.frame}>
+        <Range label={copy.inspector.canvasPanel.padding} value={appearance.padding} min={0} max={18} unit="%" onChange={(padding) => dispatch({ type: "UPDATE_APPEARANCE", patch: { padding } })} />
+        <Range label={copy.inspector.canvasPanel.radius} value={appearance.radius} min={0} max={60} unit="%" onChange={(radius) => dispatch({ type: "UPDATE_APPEARANCE", patch: { radius } })} />
+        <Range label={copy.inspector.canvasPanel.shadow} value={appearance.shadow} min={0} max={100} unit="%" onChange={(shadow) => dispatch({ type: "UPDATE_APPEARANCE", patch: { shadow } })} />
       </ControlGroup>
     </>
   );
@@ -246,45 +250,46 @@ function CanvasInspector() {
 
 function TextInspector() {
   const { state, dispatch } = useEditor();
+  const copy = useEditorCopy();
   const overlay = state.project.textOverlays.find((item) => item.id === state.selectedId);
   if (!overlay) {
     return (
       <>
-        <SectionHeader title="Text" description="Add concise captions, callouts, and titles." />
-        <InspectorEmpty icon={<TextT size={25} />} title="No text selected" body="Create a text layer at the current playhead." action={<button className="primary-button" onClick={() => dispatch({ type: "ADD_TEXT" })}>Add text</button>} />
+        <SectionHeader title={copy.inspector.textPanel.title} description={copy.inspector.textPanel.description} />
+        <InspectorEmpty icon={<TextT size={25} />} title={copy.inspector.textPanel.noSelectedTitle} body={copy.inspector.textPanel.noSelectedBody} action={<button className="primary-button" onClick={() => dispatch({ type: "ADD_TEXT" })}>{copy.inspector.textPanel.add}</button>} />
       </>
     );
   }
   return (
     <>
-      <SectionHeader title="Text layer" description="Text remains editable until export." />
-      <ControlGroup label="Content">
+      <SectionHeader title={copy.inspector.textPanel.layerTitle} description={copy.inspector.textPanel.layerDescription} />
+      <ControlGroup label={copy.inspector.textPanel.content}>
         <label className="stacked-field">
-          <span>Text</span>
+          <span>{copy.inspector.textPanel.text}</span>
           <textarea value={overlay.text} rows={4} onChange={(event) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { text: event.target.value.slice(0, 240) } })} />
         </label>
       </ControlGroup>
-      <ControlGroup label="Timing">
+      <ControlGroup label={copy.inspector.textPanel.timing}>
         <div className="dual-values">
-          <NumberField label="Start" value={overlay.start} min={0} max={overlay.end - 0.1} step={0.1} onChange={(start) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { start } })} />
-          <NumberField label="End" value={overlay.end} min={overlay.start + 0.1} max={state.project.trim.end} step={0.1} onChange={(end) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { end } })} />
+          <NumberField label={copy.inspector.textPanel.start} value={overlay.start} min={0} max={overlay.end - 0.1} step={0.1} onChange={(start) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { start } })} />
+          <NumberField label={copy.inspector.textPanel.end} value={overlay.end} min={overlay.start + 0.1} max={state.project.trim.end} step={0.1} onChange={(end) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { end } })} />
         </div>
       </ControlGroup>
-      <ControlGroup label="Typography">
-        <Range label="Size" value={overlay.fontSize} min={18} max={120} unit="px" onChange={(fontSize) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { fontSize } })} />
-        <Range label="Weight" value={overlay.fontWeight} min={400} max={900} step={100} onChange={(fontWeight) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { fontWeight } })} />
-        <ColorField label="Text color" value={overlay.color} onChange={(color) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { color } })} />
+      <ControlGroup label={copy.inspector.textPanel.typography}>
+        <Range label={copy.inspector.textPanel.size} value={overlay.fontSize} min={18} max={120} unit="px" onChange={(fontSize) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { fontSize } })} />
+        <Range label={copy.inspector.textPanel.weight} value={overlay.fontWeight} min={400} max={900} step={100} onChange={(fontWeight) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { fontWeight } })} />
+        <ColorField label={copy.inspector.textPanel.color} value={overlay.color} onChange={(color) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { color } })} />
       </ControlGroup>
-      <ControlGroup label="Position">
+      <ControlGroup label={copy.inspector.textPanel.position}>
         <div className="dual-values">
-          <NumberField label="X" value={overlay.x} min={0} max={100} onChange={(x) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { x } })} />
-          <NumberField label="Y" value={overlay.y} min={0} max={100} onChange={(y) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { y } })} />
+          <NumberField label={copy.inspector.textPanel.x} value={overlay.x} min={0} max={100} onChange={(x) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { x } })} />
+          <NumberField label={copy.inspector.textPanel.y} value={overlay.y} min={0} max={100} onChange={(y) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { y } })} />
         </div>
-        <Range label="Width" value={overlay.width} min={20} max={96} unit="%" onChange={(width) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { width } })} />
+        <Range label={copy.inspector.textPanel.width} value={overlay.width} min={20} max={96} unit="%" onChange={(width) => dispatch({ type: "UPDATE_TEXT", id: overlay.id, patch: { width } })} />
       </ControlGroup>
       <button className="delete-button" onClick={() => dispatch({ type: "REMOVE_TEXT", id: overlay.id })}>
         <Trash size={16} />
-        Remove text layer
+        {copy.inspector.textPanel.remove}
       </button>
     </>
   );
@@ -292,34 +297,35 @@ function TextInspector() {
 
 function ZoomInspector() {
   const { state, dispatch } = useEditor();
+  const copy = useEditorCopy();
   const region = state.project.zoomRegions.find((item) => item.id === state.selectedId);
   if (!region) {
     return (
       <>
-        <SectionHeader title="Zoom" description="Direct attention without re-recording." />
-        <InspectorEmpty icon={<MagnifyingGlassPlus size={25} />} title="No zoom selected" body="Create a smooth focus region at the playhead." action={<button className="primary-button" onClick={() => dispatch({ type: "ADD_ZOOM" })}>Add zoom</button>} />
+        <SectionHeader title={copy.inspector.zoomPanel.title} description={copy.inspector.zoomPanel.description} />
+        <InspectorEmpty icon={<MagnifyingGlassPlus size={25} />} title={copy.inspector.zoomPanel.noSelectedTitle} body={copy.inspector.zoomPanel.noSelectedBody} action={<button className="primary-button" onClick={() => dispatch({ type: "ADD_ZOOM" })}>{copy.inspector.zoomPanel.add}</button>} />
       </>
     );
   }
   return (
     <>
-      <SectionHeader title="Zoom region" description="Focus a point while preserving the canvas size." />
-      <ControlGroup label="Timing">
+      <SectionHeader title={copy.inspector.zoomPanel.regionTitle} description={copy.inspector.zoomPanel.regionDescription} />
+      <ControlGroup label={copy.inspector.zoomPanel.timing}>
         <div className="dual-values">
-          <NumberField label="Start" value={region.start} min={0} max={region.end - 0.1} step={0.1} onChange={(start) => dispatch({ type: "UPDATE_ZOOM", id: region.id, patch: { start } })} />
-          <NumberField label="End" value={region.end} min={region.start + 0.1} max={state.project.trim.end} step={0.1} onChange={(end) => dispatch({ type: "UPDATE_ZOOM", id: region.id, patch: { end } })} />
+          <NumberField label={copy.inspector.zoomPanel.start} value={region.start} min={0} max={region.end - 0.1} step={0.1} onChange={(start) => dispatch({ type: "UPDATE_ZOOM", id: region.id, patch: { start } })} />
+          <NumberField label={copy.inspector.zoomPanel.end} value={region.end} min={region.start + 0.1} max={state.project.trim.end} step={0.1} onChange={(end) => dispatch({ type: "UPDATE_ZOOM", id: region.id, patch: { end } })} />
         </div>
       </ControlGroup>
-      <ControlGroup label="Focus">
-        <Range label="Scale" value={region.scale} min={1} max={3} step={0.05} unit="×" onChange={(scale) => dispatch({ type: "UPDATE_ZOOM", id: region.id, patch: { scale } })} />
+      <ControlGroup label={copy.inspector.zoomPanel.focus}>
+        <Range label={copy.inspector.zoomPanel.scale} value={region.scale} min={1} max={3} step={0.05} unit="×" onChange={(scale) => dispatch({ type: "UPDATE_ZOOM", id: region.id, patch: { scale } })} />
         <div className="dual-values">
-          <NumberField label="X" value={region.x} min={0} max={100} onChange={(x) => dispatch({ type: "UPDATE_ZOOM", id: region.id, patch: { x } })} />
-          <NumberField label="Y" value={region.y} min={0} max={100} onChange={(y) => dispatch({ type: "UPDATE_ZOOM", id: region.id, patch: { y } })} />
+          <NumberField label={copy.inspector.zoomPanel.x} value={region.x} min={0} max={100} onChange={(x) => dispatch({ type: "UPDATE_ZOOM", id: region.id, patch: { x } })} />
+          <NumberField label={copy.inspector.zoomPanel.y} value={region.y} min={0} max={100} onChange={(y) => dispatch({ type: "UPDATE_ZOOM", id: region.id, patch: { y } })} />
         </div>
       </ControlGroup>
       <button className="delete-button" onClick={() => dispatch({ type: "REMOVE_ZOOM", id: region.id })}>
         <Trash size={16} />
-        Remove zoom region
+        {copy.inspector.zoomPanel.remove}
       </button>
     </>
   );
@@ -327,20 +333,21 @@ function ZoomInspector() {
 
 function ExportInspector({ onExport }: { onExport: () => void }) {
   const { state, dispatch } = useEditor();
+  const copy = useEditorCopy();
   const asset = getScreenAsset(state.project);
   return (
     <>
-      <SectionHeader title="Export" description="Render the canvas locally with the best codec your browser exposes." />
-      <ControlGroup label="Output">
+      <SectionHeader title={copy.inspector.exportPanel.title} description={copy.inspector.exportPanel.description} />
+      <ControlGroup label={copy.inspector.exportPanel.output}>
         <SelectField
-          label="Resolution"
+          label={copy.inspector.exportPanel.resolution}
           value={state.project.export.quality}
           options={[
             ["720p", "720p"],
             ["1080p", "1080p"],
             ["1440p", "1440p"],
-            ["2160p", "4K"],
-            ["source", "Source"],
+            ["2160p", copy.inspector.exportPanel.fourK],
+            ["source", copy.inspector.exportPanel.source],
           ]}
           onChange={(quality) => dispatch({ type: "UPDATE_EXPORT", patch: { quality: quality as typeof state.project.export.quality } })}
         />
@@ -351,20 +358,20 @@ function ExportInspector({ onExport }: { onExport: () => void }) {
             </button>
           ))}
         </div>
-        <Range label="Bitrate" value={state.project.export.videoBitrate / 1_000_000} min={6} max={60} step={1} unit=" Mbps" onChange={(videoBitrate) => dispatch({ type: "UPDATE_EXPORT", patch: { videoBitrate: videoBitrate * 1_000_000 } })} />
+        <Range label={copy.inspector.exportPanel.bitrate} value={state.project.export.videoBitrate / 1_000_000} min={6} max={60} step={1} unit=" Mbps" onChange={(videoBitrate) => dispatch({ type: "UPDATE_EXPORT", patch: { videoBitrate: videoBitrate * 1_000_000 } })} />
       </ControlGroup>
       <div className="export-summary">
         <ArrowsOutCardinal size={20} />
         <div>
           <strong>{state.project.export.quality === "source" ? `${asset?.width ?? 0} × ${asset?.height ?? 0}` : state.project.export.quality}</strong>
-          <span>{state.project.export.frameRate} fps · Local render</span>
+          <span>{state.project.export.frameRate} fps · {copy.inspector.exportPanel.localRender}</span>
         </div>
       </div>
       <button className="primary-button inspector-export" onClick={onExport} disabled={!asset}>
         <Export size={17} />
-        Export video
+        {copy.inspector.exportPanel.exportVideo}
       </button>
-      <p className="export-note">The first release renders in real time for consistent cross-browser audio and visual composition.</p>
+      <p className="export-note">{copy.inspector.exportPanel.note}</p>
     </>
   );
 }

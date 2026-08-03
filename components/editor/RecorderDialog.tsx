@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from "react";
 import { formatTime } from "@/lib/project";
 import { startScreenRecording, type ActiveRecording } from "@/lib/recorder";
 import { useEditor } from "./EditorContext";
+import { useEditorCopy, useEditorLocale } from "./EditorI18n";
 
 interface RecorderDialogProps {
   open: boolean;
@@ -24,6 +25,8 @@ interface RecorderDialogProps {
 
 export function RecorderDialog({ open, onClose }: RecorderDialogProps) {
   const { addBlob } = useEditor();
+  const copy = useEditorCopy();
+  const locale = useEditorLocale();
   const [microphone, setMicrophone] = useState(true);
   const [camera, setCamera] = useState(false);
   const [systemAudio, setSystemAudio] = useState(true);
@@ -67,12 +70,8 @@ export function RecorderDialog({ open, onClose }: RecorderDialogProps) {
       timer.current = window.setInterval(() => {
         setElapsed(pausedElapsed.current + (performance.now() - startedAt.current) / 1000);
       }, 200);
-    } catch (reason) {
-      setError(
-        reason instanceof Error
-          ? reason.message
-          : "Screen access was not granted. Choose a tab, window, or display and try again.",
-      );
+    } catch {
+      setError(copy.recorder.accessError);
     }
   };
 
@@ -97,15 +96,20 @@ export function RecorderDialog({ open, onClose }: RecorderDialogProps) {
     if (timer.current) window.clearInterval(timer.current);
     try {
       const result = await recording.stop();
-      await addBlob(result.screen, `Recording ${new Date().toLocaleString()}.webm`, "screen", true);
+      await addBlob(
+        result.screen,
+        `${locale === "zh" ? "录制" : "Recording"} ${new Date().toLocaleString(locale === "zh" ? "zh-CN" : "en-US")}.webm`,
+        "screen",
+        true,
+      );
       if (result.camera) {
-        await addBlob(result.camera, "Camera.webm", "camera");
+        await addBlob(result.camera, `${locale === "zh" ? "摄像头" : "Camera"}.webm`, "camera");
       }
       active.current = null;
       setStatus("setup");
       onClose();
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The recording could not be saved.");
+    } catch {
+      setError(copy.recorder.saveError);
       setStatus("setup");
     }
   };
@@ -127,10 +131,10 @@ export function RecorderDialog({ open, onClose }: RecorderDialogProps) {
       <section className="recorder-dialog" role="dialog" aria-modal="true" aria-labelledby="record-title">
         <header>
           <div>
-            <span className="dialog-kicker">Browser capture</span>
-            <h2 id="record-title">{isCapturing ? "Recording in progress" : "Start a new recording"}</h2>
+            <span className="dialog-kicker">{copy.recorder.kicker}</span>
+            <h2 id="record-title">{isCapturing ? copy.recorder.recordingTitle : copy.recorder.setupTitle}</h2>
           </div>
-          <button className="icon-button" onClick={close} aria-label="Close recorder">
+          <button className="icon-button" onClick={close} aria-label={copy.recorder.close}>
             <X size={18} />
           </button>
         </header>
@@ -147,11 +151,11 @@ export function RecorderDialog({ open, onClose }: RecorderDialogProps) {
             <div className="capture-controls">
               <button onClick={togglePause} disabled={status === "saving"} className="secondary-button">
                 {status === "paused" ? <Play size={18} weight="fill" /> : <Pause size={18} weight="fill" />}
-                {status === "paused" ? "Resume" : "Pause"}
+                {status === "paused" ? copy.recorder.resume : copy.recorder.pause}
               </button>
               <button onClick={stop} disabled={status === "saving"} className="danger-button">
                 <Stop size={18} weight="fill" />
-                {status === "saving" ? "Preparing editor..." : "Stop recording"}
+                {status === "saving" ? copy.recorder.preparing : copy.recorder.stop}
               </button>
             </div>
           </>
@@ -160,36 +164,36 @@ export function RecorderDialog({ open, onClose }: RecorderDialogProps) {
             <div className="capture-source">
               <Desktop size={30} />
               <div>
-                <strong>Choose after you click record</strong>
-                <span>Your browser will ask for a tab, window, or display.</span>
+                <strong>{copy.recorder.chooseTitle}</strong>
+                <span>{copy.recorder.chooseBody}</span>
               </div>
               <Check size={18} weight="bold" />
             </div>
             <div className="record-options">
               <ToggleOption
                 icon={<Microphone size={19} />}
-                label="Microphone"
-                detail="Noise suppression on"
+                label={copy.recorder.microphone}
+                detail={copy.recorder.microphoneDetail}
                 checked={microphone}
                 onChange={setMicrophone}
               />
               <ToggleOption
                 icon={<SpeakerHigh size={19} />}
-                label="Shared audio"
-                detail="Availability depends on the selected source"
+                label={copy.recorder.sharedAudio}
+                detail={copy.recorder.sharedAudioDetail}
                 checked={systemAudio}
                 onChange={setSystemAudio}
               />
               <ToggleOption
                 icon={<Camera size={19} />}
-                label="Camera"
-                detail="Recorded as an editable overlay"
+                label={copy.recorder.camera}
+                detail={copy.recorder.cameraDetail}
                 checked={camera}
                 onChange={setCamera}
               />
             </div>
             <fieldset className="frame-rate">
-              <legend>Capture frame rate</legend>
+              <legend>{copy.recorder.frameRate}</legend>
               {[30, 60].map((value) => (
                 <button
                   type="button"
@@ -204,9 +208,9 @@ export function RecorderDialog({ open, onClose }: RecorderDialogProps) {
             {error && <p className="inline-error">{error}</p>}
             <button className="primary-button record-start" onClick={start}>
               <Record size={18} weight="fill" />
-              Choose screen and record
+              {copy.recorder.chooseAndRecord}
             </button>
-            <p className="privacy-note">Media stays on this device. Nothing is uploaded by Vibe Screen.</p>
+            <p className="privacy-note">{copy.recorder.privacy}</p>
           </>
         )}
       </section>

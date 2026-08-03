@@ -5,9 +5,11 @@ import { useRef, useState } from "react";
 import { exportProject, saveBlob, type ExportProgress } from "@/lib/exporter";
 import { formatTime } from "@/lib/project";
 import { useEditor } from "./EditorContext";
+import { useEditorCopy } from "./EditorI18n";
 
 export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { state } = useEditor();
+  const copy = useEditorCopy();
   const [progress, setProgress] = useState<ExportProgress | null>(null);
   const [error, setError] = useState("");
   const [complete, setComplete] = useState(false);
@@ -32,7 +34,7 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
       await saveBlob(blob, state.project.name);
     } catch (reason) {
       if (reason instanceof DOMException && reason.name === "AbortError") return;
-      setError(reason instanceof Error ? reason.message : "The video could not be exported.");
+      setError(copy.exportDialog.error);
     }
   };
 
@@ -51,37 +53,37 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
       <section className="export-dialog" role="dialog" aria-modal="true" aria-labelledby="export-title">
         <header>
           <div>
-            <span className="dialog-kicker">Local render</span>
-            <h2 id="export-title">{complete ? "Your video is ready" : "Export Vibe Screen video"}</h2>
+            <span className="dialog-kicker">{copy.exportDialog.kicker}</span>
+            <h2 id="export-title">{complete ? copy.exportDialog.readyTitle : copy.exportDialog.title}</h2>
           </div>
-          <button className="icon-button" onClick={close} aria-label="Close export">
+          <button className="icon-button" onClick={close} aria-label={copy.exportDialog.close}>
             <X size={18} />
           </button>
         </header>
         {complete ? (
           <div className="export-complete">
             <CheckCircle size={42} weight="duotone" />
-            <strong>Export completed</strong>
-            <p>The encoded file was saved without uploading your project.</p>
+            <strong>{copy.exportDialog.completed}</strong>
+            <p>{copy.exportDialog.completedBody}</p>
             <button
               className="primary-button"
               disabled={!exportedBlob}
               onClick={() => exportedBlob && void saveBlob(exportedBlob, state.project.name)}
             >
               <Export size={17} />
-              Save another copy
+              {copy.exportDialog.saveAnother}
             </button>
           </div>
         ) : (
           <>
             <div className="export-specs">
-              <div><span>Resolution</span><strong>{state.project.export.quality}</strong></div>
-              <div><span>Frame rate</span><strong>{state.project.export.frameRate} fps</strong></div>
-              <div><span>Bitrate</span><strong>{Math.round(state.project.export.videoBitrate / 1_000_000)} Mbps</strong></div>
+              <div><span>{copy.exportDialog.resolution}</span><strong>{state.project.export.quality}</strong></div>
+              <div><span>{copy.exportDialog.frameRate}</span><strong>{state.project.export.frameRate} fps</strong></div>
+              <div><span>{copy.exportDialog.bitrate}</span><strong>{Math.round(state.project.export.videoBitrate / 1_000_000)} Mbps</strong></div>
             </div>
             {progress && (
               <div className="export-progress">
-                <div><span>{progress.phase === "preparing" ? "Preparing media" : progress.phase === "finalizing" ? "Finalizing file" : "Rendering frames"}</span><strong>{Math.round(progress.progress * 100)}%</strong></div>
+                <div><span>{progress.phase === "preparing" ? copy.exportDialog.preparing : progress.phase === "finalizing" ? copy.exportDialog.finalizing : copy.exportDialog.rendering}</span><strong>{Math.round(progress.progress * 100)}%</strong></div>
                 <progress max="1" value={progress.progress} />
                 <small>{formatTime(progress.elapsed)} / {formatTime(progress.total)}</small>
               </div>
@@ -89,9 +91,9 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
             {error && <p className="inline-error">{error}</p>}
             <button className="primary-button export-confirm" onClick={() => void start()} disabled={isRunning}>
               <Export size={17} />
-              {isRunning ? "Rendering..." : error ? "Try export again" : "Start export"}
+              {isRunning ? copy.exportDialog.renderingButton : error ? copy.exportDialog.retry : copy.exportDialog.start}
             </button>
-            <p className="privacy-note">Keep this tab active during the real-time render.</p>
+            <p className="privacy-note">{copy.exportDialog.privacy}</p>
           </>
         )}
       </section>

@@ -1,11 +1,5 @@
-import type { Metadata } from "next";
-import { ScreenStudio } from "@/components/editor/ScreenStudio";
-
-export const metadata: Metadata = {
-  title: "Studio | Vibe Screen",
-  description: "Record, edit, and export polished screen videos in your browser.",
-};
+import { StudioLocaleGateway } from "@/components/editor/StudioLocaleGateway";
 
 export default function StudioPage() {
-  return <ScreenStudio />;
+  return <StudioLocaleGateway />;
 }

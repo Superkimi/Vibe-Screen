@@ -10,19 +10,21 @@ import {
 import { useMemo, useState } from "react";
 import { clampTime, formatTime, getScreenAsset } from "@/lib/project";
 import { useEditor } from "./EditorContext";
+import { useEditorCopy } from "./EditorI18n";
 
 export function Timeline() {
   const { state, dispatch } = useEditor();
+  const copy = useEditorCopy();
   const asset = getScreenAsset(state.project);
   const duration = asset?.duration ?? 0;
   const [scale, setScale] = useState(1);
   const rows = useMemo(
     () => [
-      { id: "video", label: "Screen", icon: <VideoCamera size={15} /> },
-      { id: "zoom", label: "Zoom", icon: <MagnifyingGlassPlus size={15} /> },
-      { id: "text", label: "Text", icon: <TextT size={15} /> },
+      { id: "video", label: copy.timeline.screen, icon: <VideoCamera size={15} /> },
+      { id: "zoom", label: copy.inspector.panel.zoom, icon: <MagnifyingGlassPlus size={15} /> },
+      { id: "text", label: copy.timeline.text, icon: <TextT size={15} /> },
     ],
-    [],
+    [copy.inspector.panel.zoom, copy.timeline.screen, copy.timeline.text],
   );
 
   const seekFromPointer = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -33,12 +35,12 @@ export function Timeline() {
   };
 
   return (
-    <section className="timeline-shell" aria-label="Timeline editor">
+    <section className="timeline-shell" aria-label={copy.timeline.aria}>
       <header className="timeline-header">
         <div className="timeline-tools">
           <button
             className="icon-button"
-            aria-label="Add zoom"
+            aria-label={copy.timeline.addZoom}
             disabled={!asset}
             onClick={() => dispatch({ type: "ADD_ZOOM" })}
           >
@@ -46,7 +48,7 @@ export function Timeline() {
           </button>
           <button
             className="icon-button"
-            aria-label="Add text"
+            aria-label={copy.timeline.addText}
             disabled={!asset}
             onClick={() => dispatch({ type: "ADD_TEXT" })}
           >
@@ -62,7 +64,7 @@ export function Timeline() {
             max="2"
             step="0.05"
             value={scale}
-            aria-label="Timeline zoom"
+            aria-label={copy.timeline.zoom}
             onChange={(event) => setScale(Number(event.target.value))}
           />
           <MagnifyingGlassPlus size={14} />
@@ -136,7 +138,7 @@ export function Timeline() {
                         dispatch({ type: "SET_PANEL", panel: "text" });
                       }}
                     >
-                      {overlay.text || "Text"}
+                      {overlay.text || copy.timeline.text}
                     </button>
                   ))}
                 </div>
@@ -148,7 +150,7 @@ export function Timeline() {
                 </div>
               </>
             ) : (
-              <div className="timeline-empty">Record or import media to build a timeline.</div>
+              <div className="timeline-empty">{copy.timeline.empty}</div>
             )}
           </div>
         </div>

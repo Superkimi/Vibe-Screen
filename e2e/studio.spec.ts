@@ -11,7 +11,7 @@ test("landing page reaches the studio", async ({ page }) => {
   await page.goto("/en");
   await expect(page.getByRole("heading", { name: "Your screen, edited with intention." })).toBeVisible();
   await page.getByRole("link", { name: "Start recording" }).click();
-  await expect(page).toHaveURL(/\/studio\/?$/);
+  await expect(page).toHaveURL(/\/en\/studio\/?$/);
   await expect(page.getByRole("heading", { name: "Capture your first scene" })).toBeVisible();
   await expect(page.getByLabel("Project media")).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Inspector" })).toBeVisible();
@@ -29,8 +29,26 @@ test("Chinese landing page switches to the matching English route", async ({ pag
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
 
+test("studio switches every editor surface between Chinese and English", async ({ page }) => {
+  await page.goto("/zh/studio");
+  await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
+  await expect(page.getByRole("complementary", { name: "检查器" })).toBeVisible();
+  await expect(page.getByText("素材", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "录制" }).first()).toBeVisible();
+  await page.getByRole("button", { name: "录制" }).first().click();
+  await expect(page.getByRole("heading", { name: "开始新的录制" })).toBeVisible();
+  await expect(page.getByText("麦克风", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "关闭录制器" }).click();
+  await page.getByRole("link", { name: "EN", exact: true }).click();
+  await expect(page).toHaveURL(/\/en\/studio\/?$/);
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.getByRole("complementary", { name: "Inspector" })).toBeVisible();
+  await expect(page.getByText("Assets", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Record" }).first()).toBeVisible();
+});
+
 test("recording dialog exposes capture and quality controls", async ({ page }) => {
-  await page.goto("/studio");
+  await page.goto("/en/studio");
   await page.getByRole("button", { name: "Start recording" }).click();
   await expect(page.getByRole("heading", { name: "Start a new recording" })).toBeVisible();
   await expect(page.getByText("Microphone", { exact: true })).toBeVisible();
