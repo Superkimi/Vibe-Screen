@@ -1,6 +1,12 @@
 import { qualityBitrate, selectRecorderMimeType } from "./capabilities";
 import { calculateOutputSize, renderFrame } from "./render-frame";
-import { getScreenAsset, type VibeProject } from "./project";
+import {
+  activeSpeedAt,
+  getEditedDuration,
+  getScreenAsset,
+  sourceTimeToTimelineTime,
+  type VibeProject,
+} from "./project";
 
 type CapturableCanvas = HTMLCanvasElement & {
   captureStream(frameRate?: number): MediaStream;
@@ -107,9 +113,12 @@ export async function exportProject({ project, onProgress, signal }: ExportOptio
     project.trim.end > start ? project.trim.end : screen.duration,
     screen.duration,
   );
-  const total = Math.max(0.01, end - start);
+  const editedTotal = Math.max(0.01, getEditedDuration(project, screen.duration));
   screen.currentTime = start;
   if (webcam) webcam.currentTime = start;
+  const initialSpeed = activeSpeedAt(project, start);
+  screen.playbackRate = initialSpeed;
+  if (webcam) webcam.playbackRate = initialSpeed;
   await Promise.all([
     waitForEvent(screen, "seeked"),
     webcam ? waitForEvent(webcam, "seeked") : Promise.resolve(),
@@ -138,7 +147,7 @@ export async function exportProject({ project, onProgress, signal }: ExportOptio
     recorder.onstop = () => {
       if (settled) return;
       settled = true;
-      onProgress?.({ phase: "finalizing", progress: 1, elapsed: total, total });
+      onProgress?.({ phase: "finalizing", progress: 1, elapsed: editedTotal, total: editedTotal });
       cleanUp();
       resolve(new Blob(chunks, { type: recorder.mimeType || mimeType || "video/webm" }));
     };
@@ -151,6 +160,9 @@ export async function exportProject({ project, onProgress, signal }: ExportOptio
     const draw = () => {
       if (signal?.aborted) return;
       const time = screen.currentTime;
+      const speed = activeSpeedAt(project, time);
+      if (screen.playbackRate !== speed) screen.playbackRate = speed;
+      if (webcam && webcam.playbackRate !== speed) webcam.playbackRate = speed;
       renderFrame(
         context,
         project,
@@ -159,12 +171,12 @@ export async function exportProject({ project, onProgress, signal }: ExportOptio
         time,
         output,
       );
-      const elapsed = Math.max(0, time - start);
+      const elapsed = Math.max(0, sourceTimeToTimelineTime(project, time, screen.duration));
       onProgress?.({
         phase: "rendering",
-        progress: Math.min(elapsed / total, 0.995),
+        progress: Math.min(elapsed / editedTotal, 0.995),
         elapsed,
-        total,
+        total: editedTotal,
       });
       if (screen.ended || time >= end - 1 / frameRate) {
         finish();

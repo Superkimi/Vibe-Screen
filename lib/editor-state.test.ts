@@ -50,4 +50,19 @@ describe("editor reducer", () => {
     });
     expect(state.project.screenAssetId).toBe("screen-1");
   });
+
+  it("adds and removes a local speed region with undo support", () => {
+    let state = editorReducer(createEditorState(), {
+      type: "ADD_ASSET",
+      asset,
+      makePrimary: true,
+    });
+    state = editorReducer(state, { type: "SEEK", time: 3 });
+    state = editorReducer(state, { type: "ADD_SPEED" });
+    expect(state.project.speedRegions[0]).toMatchObject({ start: 3, speed: 1.5 });
+    expect(state.activePanel).toBe("speed");
+    const id = state.project.speedRegions[0].id;
+    state = editorReducer(state, { type: "REMOVE_SPEED", id });
+    expect(state.project.speedRegions).toHaveLength(0);
+  });
 });

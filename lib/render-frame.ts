@@ -56,6 +56,31 @@ export function activeZoomAt(project: VibeProject, time: number): ZoomRegion | n
   );
 }
 
+/**
+ * Returns a softened zoom state so entering and leaving a focus region never
+ * causes a hard jump in the preview or the exported composition.
+ */
+export function interpolatedZoomAt(project: VibeProject, time: number): ZoomRegion | null {
+  const region = activeZoomAt(project, time);
+  if (!region) return null;
+  const duration = Math.max(0.05, region.end - region.start);
+  const transition = Math.min(0.36, duration / 2);
+  const enter = Math.min(1, Math.max(0, (time - region.start) / transition));
+  const leave = Math.min(1, Math.max(0, (region.end - time) / transition));
+  const eased = easeInOut(Math.min(enter, leave));
+  return {
+    ...region,
+    scale: 1 + (region.scale - 1) * eased,
+    x: 50 + (region.x - 50) * eased,
+    y: 50 + (region.y - 50) * eased,
+  };
+}
+
+function easeInOut(value: number): number {
+  const safe = Math.min(1, Math.max(0, value));
+  return safe * safe * (3 - 2 * safe);
+}
+
 export function roundedRectPath(
   context: CanvasRenderingContext2D,
   x: number,
@@ -224,7 +249,7 @@ export function renderFrame(
     sourceSize.width,
     sourceSize.height,
     target,
-    activeZoomAt(project, time),
+    interpolatedZoomAt(project, time),
   );
   context.restore();
   if (project.webcam.enabled && sources.webcam) {

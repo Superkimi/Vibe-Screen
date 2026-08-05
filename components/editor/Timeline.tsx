@@ -4,6 +4,7 @@ import {
   MagnifyingGlassMinus,
   MagnifyingGlassPlus,
   Scissors,
+  FastForward,
   TextT,
   VideoCamera,
 } from "@phosphor-icons/react";
@@ -23,8 +24,9 @@ export function Timeline() {
       { id: "video", label: copy.timeline.screen, icon: <VideoCamera size={15} /> },
       { id: "zoom", label: copy.inspector.panel.zoom, icon: <MagnifyingGlassPlus size={15} /> },
       { id: "text", label: copy.timeline.text, icon: <TextT size={15} /> },
+      { id: "speed", label: copy.timeline.speed, icon: <FastForward size={15} /> },
     ],
-    [copy.inspector.panel.zoom, copy.timeline.screen, copy.timeline.text],
+    [copy.inspector.panel.zoom, copy.timeline.screen, copy.timeline.speed, copy.timeline.text],
   );
 
   const seekFromPointer = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -53,6 +55,14 @@ export function Timeline() {
             onClick={() => dispatch({ type: "ADD_TEXT" })}
           >
             <TextT size={17} />
+          </button>
+          <button
+            className="icon-button"
+            aria-label={copy.timeline.addSpeed}
+            disabled={!asset}
+            onClick={() => dispatch({ type: "ADD_SPEED" })}
+          >
+            <FastForward size={17} />
           </button>
           <span className="timeline-time">{formatTime(state.currentTime)}</span>
         </div>
@@ -139,6 +149,25 @@ export function Timeline() {
                       }}
                     >
                       {overlay.text || copy.timeline.text}
+                    </button>
+                  ))}
+                </div>
+                <div className="timeline-row speed-row">
+                  {state.project.speedRegions.map((region) => (
+                    <button
+                      key={region.id}
+                      className={`region speed-region ${state.selectedId === region.id ? "selected" : ""}`}
+                      style={{
+                        left: `${(region.start / duration) * 100}%`,
+                        width: `${Math.max(((region.end - region.start) / duration) * 100, 1.5)}%`,
+                      }}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        dispatch({ type: "SELECT", id: region.id });
+                        dispatch({ type: "SET_PANEL", panel: "speed" });
+                      }}
+                    >
+                      {region.speed}×
                     </button>
                   ))}
                 </div>
