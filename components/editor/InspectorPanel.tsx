@@ -3,13 +3,20 @@
 import {
   ArrowsOutCardinal,
   Export,
+  FastForward,
   FilmSlate,
   ImageSquare,
   MagnifyingGlassPlus,
   TextT,
   Trash,
 } from "@phosphor-icons/react";
-import { clampTime, getScreenAsset, type AspectRatio } from "@/lib/project";
+import {
+  clampTime,
+  getScreenAsset,
+  PLAYBACK_SPEEDS,
+  type AspectRatio,
+  type PlaybackSpeed,
+} from "@/lib/project";
 import { useEditor } from "./EditorContext";
 import { useEditorCopy } from "./EditorI18n";
 
@@ -18,6 +25,7 @@ const panels = [
   { id: "canvas" as const, icon: ImageSquare },
   { id: "text" as const, icon: TextT },
   { id: "zoom" as const, icon: MagnifyingGlassPlus },
+  { id: "speed" as const, icon: FastForward },
   { id: "export" as const, icon: Export },
 ];
 
@@ -43,6 +51,7 @@ export function InspectorPanel({ onExport }: { onExport: () => void }) {
         {state.activePanel === "canvas" && <CanvasInspector />}
         {state.activePanel === "text" && <TextInspector />}
         {state.activePanel === "zoom" && <ZoomInspector />}
+        {state.activePanel === "speed" && <SpeedInspector />}
         {state.activePanel === "export" && <ExportInspector onExport={onExport} />}
       </div>
     </aside>
@@ -326,6 +335,95 @@ function ZoomInspector() {
       <button className="delete-button" onClick={() => dispatch({ type: "REMOVE_ZOOM", id: region.id })}>
         <Trash size={16} />
         {copy.inspector.zoomPanel.remove}
+      </button>
+    </>
+  );
+}
+
+function SpeedInspector() {
+  const { state, dispatch } = useEditor();
+  const copy = useEditorCopy();
+  const region = state.project.speedRegions.find((item) => item.id === state.selectedId);
+  if (!region) {
+    return (
+      <>
+        <SectionHeader
+          title={copy.inspector.speedPanel.title}
+          description={copy.inspector.speedPanel.description}
+        />
+        <InspectorEmpty
+          icon={<FastForward size={25} />}
+          title={copy.inspector.speedPanel.noSelectedTitle}
+          body={copy.inspector.speedPanel.noSelectedBody}
+          action={
+            <button className="primary-button" onClick={() => dispatch({ type: "ADD_SPEED" })}>
+              {copy.inspector.speedPanel.add}
+            </button>
+          }
+        />
+      </>
+    );
+  }
+
+  const maxTime = Math.max(state.project.trim.end, region.end, 0.1);
+  return (
+    <>
+      <SectionHeader
+        title={copy.inspector.speedPanel.regionTitle}
+        description={copy.inspector.speedPanel.regionDescription}
+      />
+      <ControlGroup label={copy.inspector.speedPanel.timing}>
+        <div className="dual-values">
+          <NumberField
+            label={copy.inspector.speedPanel.start}
+            value={region.start}
+            min={0}
+            max={Math.max(0, region.end - 0.1)}
+            step={0.1}
+            onChange={(start) =>
+              dispatch({
+                type: "UPDATE_SPEED",
+                id: region.id,
+                patch: { start: clampTime(start, Math.max(0, region.end - 0.1)) },
+              })
+            }
+          />
+          <NumberField
+            label={copy.inspector.speedPanel.end}
+            value={region.end}
+            min={region.start + 0.1}
+            max={maxTime}
+            step={0.1}
+            onChange={(end) =>
+              dispatch({
+                type: "UPDATE_SPEED",
+                id: region.id,
+                patch: { end: Math.max(region.start + 0.1, clampTime(end, maxTime)) },
+              })
+            }
+          />
+        </div>
+      </ControlGroup>
+      <ControlGroup label={copy.inspector.speedPanel.rate}>
+        <SelectField
+          label={copy.inspector.speedPanel.rate}
+          value={String(region.speed)}
+          options={PLAYBACK_SPEEDS.map((speed) => [
+            String(speed),
+            speed === 1 ? copy.inspector.speedPanel.normal : `${speed}×`,
+          ])}
+          onChange={(value) =>
+            dispatch({
+              type: "UPDATE_SPEED",
+              id: region.id,
+              patch: { speed: Number(value) as PlaybackSpeed },
+            })
+          }
+        />
+      </ControlGroup>
+      <button className="delete-button" onClick={() => dispatch({ type: "REMOVE_SPEED", id: region.id })}>
+        <Trash size={16} />
+        {copy.inspector.speedPanel.remove}
       </button>
     </>
   );

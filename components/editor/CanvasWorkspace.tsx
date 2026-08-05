@@ -2,7 +2,7 @@
 
 import { ArrowsOut, Play, Pause, Plus, Record } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getAspectRatioValue, getScreenAsset } from "@/lib/project";
+import { activeSpeedAt, getAspectRatioValue, getScreenAsset } from "@/lib/project";
 import { renderFrame } from "@/lib/render-frame";
 import { useEditor } from "./EditorContext";
 import { useEditorCopy } from "./EditorI18n";
@@ -49,6 +49,12 @@ export function CanvasWorkspace() {
     );
   }, [ratio, screenAsset, state.project]);
 
+  const syncPlaybackRate = useCallback(() => {
+    const speed = activeSpeedAt(state.project, screenRef.current?.currentTime ?? state.currentTime);
+    if (screenRef.current) screenRef.current.playbackRate = speed;
+    if (webcamRef.current) webcamRef.current.playbackRate = speed;
+  }, [state.currentTime, state.project]);
+
   useEffect(() => {
     const screen = screenRef.current;
     if (!screen || !screenAsset?.objectUrl) return;
@@ -56,8 +62,9 @@ export function CanvasWorkspace() {
       screen.currentTime = Math.min(state.currentTime, screen.duration || state.currentTime);
       if (webcamRef.current) webcamRef.current.currentTime = screen.currentTime;
     }
+    syncPlaybackRate();
     draw();
-  }, [draw, screenAsset?.objectUrl, state.currentTime, state.isPlaying]);
+  }, [draw, screenAsset?.objectUrl, state.currentTime, state.isPlaying, syncPlaybackRate]);
 
   useEffect(() => {
     const screen = screenRef.current;
@@ -68,6 +75,7 @@ export function CanvasWorkspace() {
         screen.currentTime = state.project.trim.start;
         if (webcam) webcam.currentTime = state.project.trim.start;
       }
+      syncPlaybackRate();
       void screen.play();
       if (webcam) void webcam.play();
       const animate = () => {
@@ -81,6 +89,7 @@ export function CanvasWorkspace() {
           dispatch({ type: "SEEK", time: state.project.trim.start });
           return;
         }
+        syncPlaybackRate();
         draw();
         if (Math.abs(screen.currentTime - lastReportedTime.current) > 0.08) {
           lastReportedTime.current = screen.currentTime;
@@ -101,6 +110,7 @@ export function CanvasWorkspace() {
     state.isPlaying,
     state.project.trim.end,
     state.project.trim.start,
+    syncPlaybackRate,
   ]);
 
   return (

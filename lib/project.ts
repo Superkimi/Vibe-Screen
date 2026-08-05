@@ -1,4 +1,4 @@
-export const PROJECT_VERSION = 1 as const;
+export const PROJECT_VERSION = 2 as const;
 
 export type AspectRatio = "source" | "16:9" | "9:16" | "1:1" | "4:3";
 export type BackgroundKind = "solid" | "gradient";
@@ -6,6 +6,9 @@ export type AssetKind = "screen" | "camera" | "video" | "image";
 export type ExportQuality = "720p" | "1080p" | "1440p" | "2160p" | "source";
 export type ExportFrameRate = 30 | 60;
 export type WebcamShape = "circle" | "rounded" | "square";
+export type PlaybackSpeed = 0.5 | 0.75 | 1 | 1.25 | 1.5 | 2;
+
+export const PLAYBACK_SPEEDS: readonly PlaybackSpeed[] = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
 export interface MediaAsset {
   id: string;
@@ -42,6 +45,13 @@ export interface ZoomRegion {
   scale: number;
   x: number;
   y: number;
+}
+
+export interface SpeedRegion {
+  id: string;
+  start: number;
+  end: number;
+  speed: PlaybackSpeed;
 }
 
 export interface EditorAppearance {
@@ -85,6 +95,7 @@ export interface VibeProject {
   webcam: WebcamSettings;
   textOverlays: TextOverlay[];
   zoomRegions: ZoomRegion[];
+  speedRegions: SpeedRegion[];
   export: ExportSettings;
 }
 
@@ -130,6 +141,7 @@ export function createEmptyProject(name = "Untitled recording"): VibeProject {
     },
     textOverlays: [],
     zoomRegions: [],
+    speedRegions: [],
     export: {
       quality: "1080p",
       frameRate: 60,
@@ -144,6 +156,17 @@ export function normalizeProject(input: unknown): VibeProject {
   const base = createEmptyProject(
     typeof candidate.name === "string" ? candidate.name.slice(0, 120) : undefined,
   );
+  const normalizeRegion = (region: unknown): SpeedRegion | null => {
+    if (!region || typeof region !== "object") return null;
+    const value = region as Partial<SpeedRegion>;
+    if (typeof value.id !== "string") return null;
+    const start = Number.isFinite(value.start) ? Math.max(0, Number(value.start)) : 0;
+    const end = Number.isFinite(value.end) ? Math.max(start + 0.05, Number(value.end)) : start + 1;
+    const speed = PLAYBACK_SPEEDS.includes(value.speed as PlaybackSpeed)
+      ? (value.speed as PlaybackSpeed)
+      : 1.5;
+    return { id: value.id, start, end, speed };
+  };
   return {
     ...base,
     ...candidate,
@@ -154,8 +177,102 @@ export function normalizeProject(input: unknown): VibeProject {
     export: { ...base.export, ...(candidate.export ?? {}) },
     textOverlays: Array.isArray(candidate.textOverlays) ? candidate.textOverlays : [],
     zoomRegions: Array.isArray(candidate.zoomRegions) ? candidate.zoomRegions : [],
+    speedRegions: Array.isArray(candidate.speedRegions)
+      ? candidate.speedRegions.map(normalizeRegion).filter((region): region is SpeedRegion => Boolean(region))
+      : [],
     trim: { ...base.trim, ...(candidate.trim ?? {}) },
   };
+}
+
+interface SpeedSegment {
+  start: number;
+  end: number;
+  speed: PlaybackSpeed;
+}
+
+function getTrimRange(project: VibeProject, sourceDuration: number) {
+  const safeDuration = Math.max(0, Number.isFinite(sourceDuration) ? sourceDuration : 0);
+  const start = Math.min(Math.max(project.trim.start, 0), safeDuration);
+  const end = Math.min(
+    Math.max(project.trim.end > start ? project.trim.end : safeDuration, start),
+    safeDuration,
+  );
+  return { start, end };
+}
+
+function getSpeedSegments(project: VibeProject, sourceDuration: number): SpeedSegment[] {
+  const { start, end } = getTrimRange(project, sourceDuration);
+  if (end <= start) return [];
+  const boundaries = new Set<number>([start, end]);
+  for (const region of project.speedRegions) {
+    if (region.end <= start || region.start >= end) continue;
+    boundaries.add(Math.max(start, region.start));
+    boundaries.add(Math.min(end, region.end));
+  }
+  const points = [...boundaries].sort((left, right) => left - right);
+  const segments: SpeedSegment[] = [];
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const segmentStart = points[index];
+    const segmentEnd = points[index + 1];
+    if (segmentEnd - segmentStart <= 0.0001) continue;
+    const middle = (segmentStart + segmentEnd) / 2;
+    const region = [...project.speedRegions]
+      .reverse()
+      .find((candidate) => middle >= candidate.start && middle <= candidate.end);
+    segments.push({ start: segmentStart, end: segmentEnd, speed: region?.speed ?? 1 });
+  }
+  return segments;
+}
+
+export function activeSpeedAt(project: VibeProject, time: number): PlaybackSpeed {
+  return (
+    [...project.speedRegions]
+      .reverse()
+      .find((region) => time >= region.start && time <= region.end)?.speed ?? 1
+  );
+}
+
+export function getEditedDuration(project: VibeProject, sourceDuration: number): number {
+  return getSpeedSegments(project, sourceDuration).reduce(
+    (total, segment) => total + (segment.end - segment.start) / segment.speed,
+    0,
+  );
+}
+
+export function sourceTimeToTimelineTime(
+  project: VibeProject,
+  sourceTime: number,
+  sourceDuration: number,
+): number {
+  const segments = getSpeedSegments(project, sourceDuration);
+  if (segments.length === 0) return 0;
+  const safeTime = Math.min(Math.max(sourceTime, segments[0].start), segments.at(-1)?.end ?? sourceTime);
+  let timelineTime = 0;
+  for (const segment of segments) {
+    if (safeTime >= segment.end) {
+      timelineTime += (segment.end - segment.start) / segment.speed;
+      continue;
+    }
+    timelineTime += Math.max(0, safeTime - segment.start) / segment.speed;
+    break;
+  }
+  return timelineTime;
+}
+
+export function timelineTimeToSourceTime(
+  project: VibeProject,
+  timelineTime: number,
+  sourceDuration: number,
+): number {
+  const segments = getSpeedSegments(project, sourceDuration);
+  if (segments.length === 0) return getTrimRange(project, sourceDuration).start;
+  let remaining = Math.max(0, timelineTime);
+  for (const segment of segments) {
+    const timelineLength = (segment.end - segment.start) / segment.speed;
+    if (remaining <= timelineLength) return segment.start + remaining * segment.speed;
+    remaining -= timelineLength;
+  }
+  return segments.at(-1)?.end ?? 0;
 }
 
 export function touchProject(project: VibeProject): VibeProject {

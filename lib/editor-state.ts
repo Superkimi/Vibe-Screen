@@ -2,6 +2,7 @@ import {
   createEmptyProject,
   createId,
   type MediaAsset,
+  type SpeedRegion,
   type TextOverlay,
   touchProject,
   type VibeProject,
@@ -13,7 +14,7 @@ export interface EditorState {
   selectedId: string | null;
   currentTime: number;
   isPlaying: boolean;
-  activePanel: "media" | "canvas" | "text" | "zoom" | "export";
+  activePanel: "media" | "canvas" | "text" | "zoom" | "speed" | "export";
   past: VibeProject[];
   future: VibeProject[];
 }
@@ -33,6 +34,9 @@ export type EditorAction =
   | { type: "ADD_ZOOM"; region?: Partial<ZoomRegion> }
   | { type: "UPDATE_ZOOM"; id: string; patch: Partial<ZoomRegion> }
   | { type: "REMOVE_ZOOM"; id: string }
+  | { type: "ADD_SPEED"; region?: Partial<SpeedRegion> }
+  | { type: "UPDATE_SPEED"; id: string; patch: Partial<SpeedRegion> }
+  | { type: "REMOVE_SPEED"; id: string }
   | { type: "SELECT"; id: string | null }
   | { type: "SEEK"; time: number }
   | { type: "SET_PLAYING"; value: boolean }
@@ -201,6 +205,39 @@ export function editorReducer(state: EditorState, action: EditorAction): EditorS
         ...commit(state, {
           ...state.project,
           zoomRegions: state.project.zoomRegions.filter((region) => region.id !== action.id),
+        }),
+        selectedId: state.selectedId === action.id ? null : state.selectedId,
+      };
+    case "ADD_SPEED": {
+      const duration = Math.max(state.project.trim.end, 3);
+      const region: SpeedRegion = {
+        id: createId("speed"),
+        start: state.currentTime,
+        end: Math.min(state.currentTime + 3, duration),
+        speed: 1.5,
+        ...action.region,
+      };
+      return {
+        ...commit(state, {
+          ...state.project,
+          speedRegions: [...state.project.speedRegions, region],
+        }),
+        selectedId: region.id,
+        activePanel: "speed",
+      };
+    }
+    case "UPDATE_SPEED":
+      return commit(state, {
+        ...state.project,
+        speedRegions: state.project.speedRegions.map((region) =>
+          region.id === action.id ? { ...region, ...action.patch } : region,
+        ),
+      });
+    case "REMOVE_SPEED":
+      return {
+        ...commit(state, {
+          ...state.project,
+          speedRegions: state.project.speedRegions.filter((region) => region.id !== action.id),
         }),
         selectedId: state.selectedId === action.id ? null : state.selectedId,
       };

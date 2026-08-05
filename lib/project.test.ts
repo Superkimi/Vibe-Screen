@@ -1,20 +1,41 @@
 import { describe, expect, it } from "vitest";
 import {
+  getEditedDuration,
   clampTime,
   createEmptyProject,
   formatTime,
   getAspectRatioValue,
   normalizeProject,
+  sourceTimeToTimelineTime,
+  timelineTimeToSourceTime,
 } from "./project";
 
 describe("project model", () => {
   it("creates a complete local-first project", () => {
     const project = createEmptyProject("Demo");
     expect(project.name).toBe("Demo");
-    expect(project.version).toBe(1);
+    expect(project.version).toBe(2);
     expect(project.appearance.aspectRatio).toBe("source");
     expect(project.export.frameRate).toBe(60);
     expect(project.assets).toEqual([]);
+  });
+
+  it("maps local speed regions into a shorter edited duration", () => {
+    const project = createEmptyProject();
+    project.trim = { start: 0, end: 10 };
+    project.speedRegions = [{ id: "speed", start: 2, end: 6, speed: 2 }];
+    expect(getEditedDuration(project, 10)).toBe(8);
+    expect(sourceTimeToTimelineTime(project, 6, 10)).toBe(4);
+    expect(timelineTimeToSourceTime(project, 4, 10)).toBe(6);
+  });
+
+  it("recovers speed regions from older partial project data", () => {
+    const project = normalizeProject({
+      version: 1,
+      speedRegions: [{ id: "saved", start: 1, end: 4, speed: 1.25 }],
+    });
+    expect(project.version).toBe(2);
+    expect(project.speedRegions[0]).toMatchObject({ id: "saved", speed: 1.25 });
   });
 
   it("normalizes partial persisted projects", () => {

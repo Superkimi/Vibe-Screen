@@ -1815,7 +1815,7 @@ input[type="range"] {
 
 .timeline-labels {
   display: grid;
-  grid-template-rows: 30px repeat(3, 1fr);
+  grid-template-rows: 30px repeat(4, 1fr);
   padding-top: 30px;
   border-right: 1px solid var(--studio-line);
 }
@@ -1866,7 +1866,7 @@ input[type="range"] {
 
 .timeline-row {
   position: relative;
-  height: calc((100% - 30px) / 3);
+  height: calc((100% - 30px) / 4);
   border-bottom: 1px solid #2a2630;
 }
 
@@ -1906,6 +1906,10 @@ input[type="range"] {
 
 .text-region {
   background: #355a66;
+}
+
+.speed-region {
+  background: #765a3f;
 }
 
 .region:hover,

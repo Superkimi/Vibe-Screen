@@ -11,7 +11,8 @@ and renders the final composition on the user's machine.
 - Local media directory with import and project autosave in IndexedDB
 - Canvas preview with aspect ratio, background, padding, radius, and shadow
 - Independent camera overlay with position, size, shape, and mirroring
-- Timeline trim, focus zoom regions, and editable text layers
+- Timeline trim, focus zoom regions, local speed regions, and editable text layers
+- Smooth zoom entry/exit and speed-aware preview/export timing
 - Undo and redo for project edits
 - Local 720p, 1080p, 1440p, 4K, or source-resolution export
 - Explicit bitrate and frame-rate controls

@@ -31,6 +31,8 @@ of assuming they are all present.
 3. The recording is stored as a blob in IndexedDB and referenced by the project
    document.
 4. The editor reducer owns serializable project state and undo/redo history.
+   Timeline regions use source-time ranges; local speed regions are mapped to
+   edited output duration during playback and export.
 5. The preview and exporter share `renderFrame()` so exported composition
    matches the canvas.
 6. The exporter advances a deterministic playhead, draws each video frame to a
@@ -39,7 +41,9 @@ of assuming they are all present.
 ## Quality and performance choices
 
 - Preview rendering is capped by the browser animation loop and pauses when the
-  document is hidden.
+  document is hidden. Zoom transitions use the same eased transform in preview
+  and export, while speed regions update media playback rate and progress from
+  edited timeline time.
 - Source videos are decoded by the browser rather than copied into JavaScript
   frame buffers.
 - The editor stores blobs separately from project JSON, avoiding base64 memory

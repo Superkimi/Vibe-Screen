@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createEmptyProject } from "./project";
-import { activeZoomAt, calculateOutputSize } from "./render-frame";
+import { activeZoomAt, calculateOutputSize, interpolatedZoomAt } from "./render-frame";
 
 describe("render geometry", () => {
   it("calculates even high-quality output sizes", () => {
@@ -30,5 +30,13 @@ describe("render geometry", () => {
     ];
     expect(activeZoomAt(project, 2.5)?.id).toBe("second");
     expect(activeZoomAt(project, 5)).toBeNull();
+  });
+
+  it("smooths zoom entry and exit instead of jumping at region boundaries", () => {
+    const project = createEmptyProject();
+    project.zoomRegions = [{ id: "focus", start: 1, end: 3, scale: 2, x: 20, y: 30 }];
+    expect(interpolatedZoomAt(project, 1)?.scale).toBeCloseTo(1);
+    expect(interpolatedZoomAt(project, 2)?.scale).toBeCloseTo(2);
+    expect(interpolatedZoomAt(project, 3)?.scale).toBeCloseTo(1);
   });
 });

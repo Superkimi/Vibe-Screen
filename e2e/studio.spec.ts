@@ -56,3 +56,12 @@ test("recording dialog exposes capture and quality controls", async ({ page }) =
   await expect(page.getByText("Camera", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "60 fps" })).toBeVisible();
 });
+
+test("speed editing controls stay bilingual", async ({ page }) => {
+  await page.goto("/zh/studio");
+  await page.getByRole("button", { name: "变速", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "变速" })).toBeVisible();
+  await page.getByRole("link", { name: "EN", exact: true }).click();
+  await page.getByRole("button", { name: "Speed", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Speed" })).toBeVisible();
+});

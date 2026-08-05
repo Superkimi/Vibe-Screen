@@ -18,5 +18,7 @@ describe("editor localization", () => {
     expect(editorCopy.en.recorder.setupTitle).toBe("Start a new recording");
     expect(editorCopy.zh.inspector.panel.canvas).toBe("画布");
     expect(editorCopy.en.inspector.panel.canvas).toBe("Canvas");
+    expect(editorCopy.zh.inspector.panel.speed).toBe("变速");
+    expect(editorCopy.en.inspector.panel.speed).toBe("Speed");
   });
 });
